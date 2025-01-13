@@ -23,7 +23,7 @@ const expenses = {
 
 function solution1(expenses) {
   let result = null;
-  const allExpenses = [];
+  let allExpenses = [];
 
   function getMedian(arr) {
     const sorted = arr.slice().sort((a, b) => a - b);
@@ -35,6 +35,7 @@ function solution1(expenses) {
       return sorted[middle];
     }
   }
+
   function getFirstSunday(monthKey) {
     const [year, month] = monthKey.split("-").map(Number);
     let date = new Date(year, month - 1, 1);
@@ -49,21 +50,18 @@ function solution1(expenses) {
 
     return date.getDate();
   }
-  for (const month in expenses) {
-    const days = expenses[month];
-    let firstSunday = getFirstSunday(month);
 
-    for (const day in days) {
-      const dailyExpenses = days[day];
-      const dayNum = Number(day);
-      if (dayNum <= firstSunday) {
-        for (const category in dailyExpenses) {
-          dailyExpenses[category].forEach((expense) => {
-            allExpenses.push(expense);
-          });
-        }
-      }
-    }
+  for (const [month, days] of Object.entries(expenses)) {
+    const firstSunday = getFirstSunday(month);
+    const filteredDays = Object.entries(days).filter(
+      ([day]) => Number(day) <= firstSunday,
+    );
+
+    filteredDays.forEach(([, dailyExpenses]) => {
+      Object.values(dailyExpenses).forEach((expensesArray) => {
+        allExpenses.push(...expensesArray);
+      });
+    });
   }
 
   const overallMedian = getMedian(allExpenses);
@@ -71,4 +69,96 @@ function solution1(expenses) {
   return result;
 }
 
-console.log(solution1(expenses));
+function solution2(expenses) {
+  /**
+   * Metodologia: Używany jest algorytm "quick select", który jest modyfikacją quick sort.
+   * Zamiast pełnego sortowania tablicy, quick select rekurencyjnie wybiera tylko tę część,
+   * która jest potrzebna do określenia k-tego najmniejszego elementu. Aby obliczyć medianę,
+   * znajdujemy środkowy (lub dwa środkowe) elementy w tablicy.
+   *
+   * Zalety:
+   * - Średnia złożoność czasowa to O(n), gdzie n to liczba elementów w tablicy.
+   * - Wykorzystuje mniej pamięci niż pełne sortowanie.
+   *
+   * Wady:
+   * - W najgorszym przypadku (np. gdy tablica jest już posortowana w odwrotnej kolejności)
+   *   złożoność czasowa może wzrosnąć do O(n^2).
+   * - Dla małych tablic korzyści mogą być nieznaczne w porównaniu z pełnym sortowaniem.
+   */
+
+  let result = null;
+  let allExpenses = [];
+
+  function quickSelect(arr, left, right, k) {
+    if (left === right) return arr[left];
+
+    const pivotIndex = partition(arr, left, right);
+
+    if (k === pivotIndex) {
+      return arr[k];
+    } else if (k < pivotIndex) {
+      return quickSelect(arr, left, pivotIndex - 1, k);
+    } else {
+      return quickSelect(arr, pivotIndex + 1, right, k);
+    }
+  }
+
+  function partition(arr, left, right) {
+    const pivot = arr[right];
+    let i = left;
+
+    for (let j = left; j < right; j++) {
+      if (arr[j] < pivot) {
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        i++;
+      }
+    }
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+    return i;
+  }
+
+  function getMedianQuickSelect(arr) {
+    const n = arr.length;
+    if (n === 0) return 0;
+
+    if (n % 2 === 1) {
+      return quickSelect(arr, 0, n - 1, Math.floor(n / 2));
+    } else {
+      const leftMedian = quickSelect(arr, 0, n - 1, n / 2 - 1);
+      const rightMedian = quickSelect(arr, 0, n - 1, n / 2);
+      return (leftMedian + rightMedian) / 2;
+    }
+  }
+
+  function getFirstSunday(monthKey) {
+    const [year, month] = monthKey.split("-").map(Number);
+    let date = new Date(year, month - 1, 1);
+    let dayOfWeek = date.getDay();
+
+    if (dayOfWeek === 0) {
+      return date.getDate();
+    }
+
+    let daysUntilSunday = 7 - dayOfWeek;
+    date.setDate(date.getDate() + daysUntilSunday);
+
+    return date.getDate();
+  }
+
+  for (const [month, days] of Object.entries(expenses)) {
+    const firstSunday = getFirstSunday(month);
+    const filteredDays = Object.entries(days).filter(
+      ([day]) => Number(day) <= firstSunday,
+    );
+
+    filteredDays.forEach(([, dailyExpenses]) => {
+      Object.values(dailyExpenses).forEach((expensesArray) => {
+        allExpenses.push(...expensesArray);
+      });
+    });
+  }
+
+  const overallMedian = getMedianQuickSelect(allExpenses);
+  if (overallMedian > 0) result = overallMedian;
+  return result;
+}
