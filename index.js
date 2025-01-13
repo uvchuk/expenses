@@ -23,46 +23,52 @@ const expenses = {
 
 function solution1(expenses) {
   let result = null;
-  const monthlyExpenses = [];
+  const allExpenses = [];
 
-  for (const month in expenses) {
-    let total = 0;
-    const days = expenses[month];
+  function getMedian(arr) {
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
 
-    function getFirstSunday(monthKey) {
-      const [year, month] = monthKey.split("-").map(Number);
-      let date = new Date(year, month - 1, 1);
-      let dayOfWeek = date.getDay();
+    if (sorted.length % 2 === 0) {
+      return (sorted[middle - 1] + sorted[middle]) / 2;
+    } else {
+      return sorted[middle];
+    }
+  }
+  function getFirstSunday(monthKey) {
+    const [year, month] = monthKey.split("-").map(Number);
+    let date = new Date(year, month - 1, 1);
+    let dayOfWeek = date.getDay();
 
-      if (dayOfWeek === 0) {
-        return date.getDate();
-      }
-
-      let daysUntilSunday = 7 - dayOfWeek;
-      date.setDate(date.getDate() + daysUntilSunday);
-
+    if (dayOfWeek === 0) {
       return date.getDate();
     }
 
+    let daysUntilSunday = 7 - dayOfWeek;
+    date.setDate(date.getDate() + daysUntilSunday);
+
+    return date.getDate();
+  }
+  for (const month in expenses) {
+    const days = expenses[month];
     let firstSunday = getFirstSunday(month);
 
     for (const day in days) {
+      const dailyExpenses = days[day];
       const dayNum = Number(day);
-
       if (dayNum <= firstSunday) {
-        const dailyExpenses = days[day];
-
         for (const category in dailyExpenses) {
-          total += dailyExpenses[category].reduce(
-            (sum, value) => sum + value,
-            0,
-          );
+          dailyExpenses[category].forEach((expense) => {
+            allExpenses.push(expense);
+          });
         }
       }
     }
-
-    monthlyExpenses.push({ [month]: total });
   }
 
-  return monthlyExpenses;
+  const overallMedian = getMedian(allExpenses);
+  if (overallMedian > 0) result = overallMedian;
+  return result;
 }
+
+console.log(solution1(expenses));
